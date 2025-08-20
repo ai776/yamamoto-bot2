@@ -85,7 +85,7 @@ export default function ChatBot() {
 
     try {
       console.log('Sending message with conversation_id:', conversationId)
-      
+
       const response = await axios.post('/api/chat', {
         message: inputText,
         conversation_id: conversationId,
@@ -181,7 +181,7 @@ export default function ChatBot() {
               </svg>
             </button>
           </div>
-          
+
           <div className="flex-1 overflow-y-auto p-4">
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -194,7 +194,7 @@ export default function ChatBot() {
                 placeholder="AIの振る舞いを定義するプロンプトを入力..."
               />
             </div>
-            
+
             <div className="flex space-x-2">
               <button
                 onClick={saveSettings}
@@ -209,7 +209,7 @@ export default function ChatBot() {
                 デフォルトに戻す
               </button>
             </div>
-            
+
             <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-xs text-yellow-800">
                 <strong>注意：</strong>プロンプトを保存すると現在の会話がリセットされます。
@@ -236,14 +236,13 @@ export default function ChatBot() {
               </div>
             )}
             <div
-              className={`max-w-xs px-4 py-3 rounded-2xl ${
-                message.sender === 'user'
+              className={`max-w-xs px-4 py-3 rounded-2xl ${message.sender === 'user'
                   ? 'bg-message-yellow text-gray-800'
                   : 'bg-white text-gray-800 border border-gray-200'
-              }`}
+                }`}
               style={{
-                borderRadius: message.sender === 'user' 
-                  ? '18px 18px 4px 18px' 
+                borderRadius: message.sender === 'user'
+                  ? '18px 18px 4px 18px'
                   : '4px 18px 18px 18px'
               }}
             >

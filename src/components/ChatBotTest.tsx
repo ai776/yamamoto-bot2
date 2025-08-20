@@ -180,8 +180,8 @@ export default function ChatBotTest() {
             )}
             <div
               className={`max-w-xs px-4 py-3 rounded-2xl ${message.sender === 'user'
-                  ? 'bg-message-yellow text-gray-800'
-                  : 'bg-white text-gray-800 border border-gray-200'
+                ? 'bg-message-yellow text-gray-800'
+                : 'bg-white text-gray-800 border border-gray-200'
                 }`}
               style={{
                 borderRadius: message.sender === 'user'
