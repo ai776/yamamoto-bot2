@@ -9,11 +9,12 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { message, conversation_id } = req.body
+  const { message, conversation_id, system_prompt } = req.body
 
   console.log('テストAPI - 受信:', {
     message,
-    conversation_id
+    conversation_id,
+    has_system_prompt: !!system_prompt
   })
 
   if (!message) {

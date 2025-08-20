@@ -9,12 +9,13 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { message, conversation_id } = req.body
+  const { message, conversation_id, system_prompt } = req.body
 
   // デバッグログ
   console.log('Received request:', {
     message,
     conversation_id,
+    has_system_prompt: !!system_prompt,
     hasApiKey: !!process.env.DIFY_API_KEY,
     apiKeyLength: process.env.DIFY_API_KEY?.length
   })
@@ -34,7 +35,9 @@ export default async function handler(
   try {
     // リクエストボディを作成
     const requestBody: any = {
-      inputs: {},
+      inputs: {
+        system_prompt: system_prompt || ''
+      },
       query: message,
       response_mode: 'blocking',
       user: 'default_user' // 固定のユーザー識別子
