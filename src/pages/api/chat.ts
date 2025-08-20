@@ -11,6 +11,14 @@ export default async function handler(
 
   const { message, conversation_id } = req.body
 
+  // デバッグログ
+  console.log('Received request:', {
+    message,
+    conversation_id,
+    hasApiKey: !!process.env.DIFY_API_KEY,
+    apiKeyLength: process.env.DIFY_API_KEY?.length
+  })
+
   if (!message) {
     return res.status(400).json({ error: 'Message is required' })
   }
@@ -24,16 +32,28 @@ export default async function handler(
   }
 
   try {
+    // リクエストボディを作成
+    const requestBody: any = {
+      inputs: {},
+      query: message,
+      response_mode: 'blocking',
+      user: 'default_user' // 固定のユーザー識別子
+    }
+
+    // conversation_idがある場合のみ追加
+    if (conversation_id && conversation_id !== 'null' && conversation_id !== '') {
+      requestBody.conversation_id = conversation_id
+    }
+
+    console.log('Sending to Dify API:', {
+      url: `${apiUrl}/chat-messages`,
+      body: requestBody
+    })
+
     // Dify APIへのリクエスト
     const response = await axios.post(
       `${apiUrl}/chat-messages`,
-      {
-        inputs: {},
-        query: message,
-        response_mode: 'blocking',
-        conversation_id: conversation_id || undefined,
-        user: 'user_' + Date.now() // ユーザー識別子
-      },
+      requestBody,
       {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
@@ -43,6 +63,11 @@ export default async function handler(
     )
 
     // レスポンスの形式を確認してデータを抽出
+    console.log('Dify API Response:', {
+      status: response.status,
+      data: response.data
+    })
+
     const answer = response.data.answer || response.data.message || 'すみません、応答を生成できませんでした。'
     const responseConversationId = response.data.conversation_id
 

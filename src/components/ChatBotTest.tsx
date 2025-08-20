@@ -8,11 +8,12 @@ interface Message {
   timestamp: Date
 }
 
-export default function ChatBot() {
+export default function ChatBotTest() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [conversationId, setConversationId] = useState('')
+  const [useTestApi, setUseTestApi] = useState(true) // テストモード切り替え
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -38,14 +39,15 @@ export default function ChatBot() {
     setIsLoading(true)
 
     try {
-      console.log('Sending message with conversation_id:', conversationId)
+      console.log('送信中 - conversation_id:', conversationId)
+      console.log('使用API:', useTestApi ? '/api/chat-test' : '/api/chat')
       
-      const response = await axios.post('/api/chat', {
+      const response = await axios.post(useTestApi ? '/api/chat-test' : '/api/chat', {
         message: inputText,
         conversation_id: conversationId
       })
 
-      console.log('Response from API:', response.data)
+      console.log('APIレスポンス:', response.data)
 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -57,12 +59,12 @@ export default function ChatBot() {
       setMessages(prev => [...prev, botMessage])
 
       if (response.data.conversation_id) {
-        console.log('Setting conversation_id to:', response.data.conversation_id)
+        console.log('conversation_id更新:', response.data.conversation_id)
         setConversationId(response.data.conversation_id)
       }
     } catch (error: any) {
-      console.error('Error sending message:', error)
-      console.error('Error details:', error.response?.data)
+      console.error('エラー:', error)
+      console.error('エラー詳細:', error.response?.data)
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: 'エラーが発生しました。もう一度お試しください。',
@@ -82,6 +84,12 @@ export default function ChatBot() {
     }
   }
 
+  const resetConversation = () => {
+    setMessages([])
+    setConversationId('')
+    console.log('会話をリセットしました')
+  }
+
   return (
     <div className="flex flex-col h-full max-w-md mx-auto bg-gray-100">
       {/* ヘッダー */}
@@ -89,13 +97,32 @@ export default function ChatBot() {
         <div className="flex items-center">
           <h1 className="text-lg font-semibold">山本智也</h1>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setUseTestApi(!useTestApi)}
+            className="px-3 py-1 bg-white/20 rounded text-xs"
+          >
+            {useTestApi ? 'テストAPI' : '本番API'}
+          </button>
+          <button
+            onClick={resetConversation}
+            className="px-3 py-1 bg-white/20 rounded text-xs"
+          >
+            リセット
+          </button>
           <button>
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
         </div>
+      </div>
+
+      {/* デバッグ情報 */}
+      <div className="bg-yellow-100 p-2 text-xs">
+        <div>会話ID: {conversationId || '(新規)'}</div>
+        <div>メッセージ数: {messages.length}</div>
+        <div>API: {useTestApi ? 'テストモード' : '本番モード'}</div>
       </div>
 
       {/* メッセージエリア */}
@@ -115,13 +142,14 @@ export default function ChatBot() {
               </div>
             )}
             <div
-              className={`max-w-xs px-4 py-3 rounded-2xl ${message.sender === 'user'
-                ? 'bg-message-yellow text-gray-800'
-                : 'bg-white text-gray-800 border border-gray-200'
-                }`}
+              className={`max-w-xs px-4 py-3 rounded-2xl ${
+                message.sender === 'user'
+                  ? 'bg-message-yellow text-gray-800'
+                  : 'bg-white text-gray-800 border border-gray-200'
+              }`}
               style={{
-                borderRadius: message.sender === 'user'
-                  ? '18px 18px 4px 18px'
+                borderRadius: message.sender === 'user' 
+                  ? '18px 18px 4px 18px' 
                   : '4px 18px 18px 18px'
               }}
             >
