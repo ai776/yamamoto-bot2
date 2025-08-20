@@ -136,3 +136,9 @@ vercel --prod
 ## ライセンス
 
 MIT
+
+## 📦 GitHubリポジトリ
+
+- **リポジトリURL**: https://github.com/ai776/yamamoto-bot2
+- **ブランチ**: master
+- **最終更新**: 2025-08-20 11:17
