@@ -39,7 +39,7 @@ export default function ChatBot() {
 
     try {
       console.log('Sending message with conversation_id:', conversationId)
-      
+
       const response = await axios.post('/api/chat', {
         message: inputText,
         conversation_id: conversationId

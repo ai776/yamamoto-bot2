@@ -41,7 +41,7 @@ export default function ChatBotTest() {
     try {
       console.log('送信中 - conversation_id:', conversationId)
       console.log('使用API:', useTestApi ? '/api/chat-test' : '/api/chat')
-      
+
       const response = await axios.post(useTestApi ? '/api/chat-test' : '/api/chat', {
         message: inputText,
         conversation_id: conversationId
@@ -142,14 +142,13 @@ export default function ChatBotTest() {
               </div>
             )}
             <div
-              className={`max-w-xs px-4 py-3 rounded-2xl ${
-                message.sender === 'user'
+              className={`max-w-xs px-4 py-3 rounded-2xl ${message.sender === 'user'
                   ? 'bg-message-yellow text-gray-800'
                   : 'bg-white text-gray-800 border border-gray-200'
-              }`}
+                }`}
               style={{
-                borderRadius: message.sender === 'user' 
-                  ? '18px 18px 4px 18px' 
+                borderRadius: message.sender === 'user'
+                  ? '18px 18px 4px 18px'
                   : '4px 18px 18px 18px'
               }}
             >
