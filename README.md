@@ -1,14 +1,15 @@
-# Dify チャットボット (LINE風UI)
+# 山本智也 AIチャットボット (Dify + LINE風UI)
 
-DifyのAPIを使用したLINE風UIのチャットボットアプリケーションです。
+DifyのAPIを使用したビジネス相談AIチャットボット「山本智也」です。LINE風UIでリアルタイムストリーミング対応。
 
-## 機能
+## ✨ 主な機能
 
-- LINE風の洗練されたチャットUI
-- Dify APIとの連携
-- 会話の継続性（conversation_id）のサポート
-- リアルタイムメッセージング
-- レスポンシブデザイン
+- 🎯 **山本智也AIアシスタント** - 年商40億の実業家として振る舞うAI
+- 💬 **LINE風の洗練されたチャットUI**
+- 🔄 **リアルタイムストリーミング対応** - テキストが流れるように表示
+- 🎨 **カスタムプロンプト設定機能**
+- 🔧 **デバッグモード** - 開発・テスト用の機能
+- 📱 **レスポンシブデザイン** - モバイル最適化
 
 ## セットアップ
 
@@ -76,19 +77,41 @@ Vercelのダッシュボードで以下の環境変数を設定：
 vercel --prod
 ```
 
+## 🚀 アクセスURL
+
+### 開発環境
+```bash
+npm run dev
+```
+
+- **メインページ**: http://localhost:3000
+- **ストリーミング版**: http://localhost:3000/streaming ✨NEW
+- **ストリーミングテスト**: http://localhost:3000/streaming-test ✨NEW
+- **デバッグページ**: http://localhost:3000/debug
+
 ## プロジェクト構造
 
 ```
 ├── src/
 │   ├── components/
-│   │   └── ChatBot.tsx      # メインチャットコンポーネント
+│   │   ├── ChatBot.tsx              # メインチャットコンポーネント
+│   │   ├── ChatBotTest.tsx          # デバッグ用コンポーネント
+│   │   ├── StreamingChatBot.tsx     # ストリーミング対応 ✨NEW
+│   │   └── StreamingChatBotTest.tsx # ストリーミングテスト ✨NEW
 │   ├── pages/
 │   │   ├── api/
-│   │   │   └── chat.ts      # Dify API連携エンドポイント
-│   │   ├── _app.tsx         # Next.jsアプリケーション設定
-│   │   └── index.tsx        # ホームページ
+│   │   │   ├── chat.ts              # Dify API（ブロッキング）
+│   │   │   ├── chat-test.ts         # テストAPI（モック）
+│   │   │   ├── chat-stream.ts       # ストリーミングAPI ✨NEW
+│   │   │   └── chat-stream-test.ts  # ストリーミングテスト ✨NEW
+│   │   ├── _app.tsx                 # Next.jsアプリケーション設定
+│   │   ├── index.tsx                # ホームページ
+│   │   ├── debug.tsx                # デバッグページ
+│   │   ├── streaming.tsx            # ストリーミングページ ✨NEW
+│   │   └── streaming-test.tsx       # ストリーミングテスト ✨NEW
 │   └── styles/
-│       └── globals.css      # グローバルスタイル
+│       └── globals.css              # グローバルスタイル
+├── STREAMING_SETUP.md               # ストリーミング設定ガイド ✨NEW
 ├── package.json
 ├── next.config.js
 ├── tailwind.config.js
@@ -137,8 +160,26 @@ vercel --prod
 
 MIT
 
+## 🔄 更新履歴
+
+### v2.0.0 (2025-01-09) ✨
+- ストリーミング機能実装
+- SSE (Server-Sent Events) 対応
+- タイピングインジケーター追加
+- ストリーミング中断機能
+- テスト用モックAPI追加
+
+### v1.1.0 (2025-01-08)
+- カスタムプロンプト設定機能
+- デバッグモード追加
+
+### v1.0.0 (2025-01-08)
+- 初回リリース
+- LINE風UI実装
+- Dify API連携
+
 ## 📦 GitHubリポジトリ
 
 - **リポジトリURL**: https://github.com/ai776/yamamoto-bot2
 - **ブランチ**: master
-- **最終更新**: 2025-08-20 11:17
+- **最新コミット**: ストリーミング機能実装
