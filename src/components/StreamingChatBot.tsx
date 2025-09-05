@@ -53,6 +53,8 @@ export default function StreamingChatBot() {
   const [tempSystemPrompt, setTempSystemPrompt] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const streamingQueueRef = useRef<string[]>([])  // 文字のキュー
+  const streamingIntervalRef = useRef<NodeJS.Timeout | null>(null)  // タイマー管理
 
   // 初期化時にローカルストレージから設定を読み込む
   useEffect(() => {
@@ -125,17 +127,58 @@ export default function StreamingChatBot() {
 
       let buffer = ''
       let accumulatedText = ''
+      let displayedText = ''  // 表示済みテキスト
+
+      // 1文字ずつ表示するためのタイマー開始
+      const startCharacterStreaming = () => {
+        if (streamingIntervalRef.current) {
+          clearInterval(streamingIntervalRef.current)
+        }
+
+        streamingIntervalRef.current = setInterval(() => {
+          if (streamingQueueRef.current.length > 0) {
+            const char = streamingQueueRef.current.shift()
+            if (char) {
+              displayedText += char
+              setMessages(prev => prev.map(msg =>
+                msg.id === botMessageId
+                  ? { ...msg, text: displayedText }
+                  : msg
+              ))
+            }
+          }
+        }, 25)  // 25msごとに1文字表示（ChatGPT風の速度）
+      }
+
+      // ストリーミング開始
+      startCharacterStreaming()
 
       while (true) {
         const { done, value } = await reader.read()
 
         if (done) {
-          // ストリーミング完了
-          setMessages(prev => prev.map(msg =>
-            msg.id === botMessageId
-              ? { ...msg, isStreaming: false }
-              : msg
-          ))
+          // ストリーミング完了後、残りの文字を全て表示
+          setTimeout(() => {
+            if (streamingQueueRef.current.length > 0) {
+              displayedText += streamingQueueRef.current.join('')
+              streamingQueueRef.current = []
+              setMessages(prev => prev.map(msg =>
+                msg.id === botMessageId
+                  ? { ...msg, text: displayedText, isStreaming: false }
+                  : msg
+              ))
+            } else {
+              setMessages(prev => prev.map(msg =>
+                msg.id === botMessageId
+                  ? { ...msg, isStreaming: false }
+                  : msg
+              ))
+            }
+            if (streamingIntervalRef.current) {
+              clearInterval(streamingIntervalRef.current)
+              streamingIntervalRef.current = null
+            }
+          }, 100)
           break
         }
 
@@ -148,11 +191,7 @@ export default function StreamingChatBot() {
             const data = line.slice(6).trim()
 
             if (data === '[DONE]') {
-              setMessages(prev => prev.map(msg =>
-                msg.id === botMessageId
-                  ? { ...msg, isStreaming: false }
-                  : msg
-              ))
+              // 完了時の処理は上記のdoneで行う
               continue
             }
 
@@ -161,6 +200,11 @@ export default function StreamingChatBot() {
 
               if (parsed.event === 'error') {
                 console.error('Stream error:', parsed)
+                streamingQueueRef.current = []  // キューをクリア
+                if (streamingIntervalRef.current) {
+                  clearInterval(streamingIntervalRef.current)
+                  streamingIntervalRef.current = null
+                }
                 setMessages(prev => prev.map(msg =>
                   msg.id === botMessageId
                     ? { ...msg, text: 'エラーが発生しました: ' + parsed.message, isStreaming: false }
@@ -169,14 +213,11 @@ export default function StreamingChatBot() {
                 break
               }
 
-              // テキストを累積
+              // テキストを文字配列としてキューに追加
               if (parsed.answer) {
                 accumulatedText += parsed.answer
-                setMessages(prev => prev.map(msg =>
-                  msg.id === botMessageId
-                    ? { ...msg, text: accumulatedText }
-                    : msg
-                ))
+                const chars = parsed.answer.split('')
+                streamingQueueRef.current.push(...chars)
               }
 
               // conversation_idを更新
@@ -205,6 +246,12 @@ export default function StreamingChatBot() {
     } finally {
       setIsLoading(false)
       abortControllerRef.current = null
+      // クリーンアップ
+      if (streamingIntervalRef.current) {
+        clearInterval(streamingIntervalRef.current)
+        streamingIntervalRef.current = null
+      }
+      streamingQueueRef.current = []
     }
   }
 
@@ -213,6 +260,12 @@ export default function StreamingChatBot() {
       abortControllerRef.current.abort()
       setIsLoading(false)
     }
+    // ストリーミングタイマーも停止
+    if (streamingIntervalRef.current) {
+      clearInterval(streamingIntervalRef.current)
+      streamingIntervalRef.current = null
+    }
+    streamingQueueRef.current = []
   }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
