@@ -49,7 +49,7 @@ export default function StreamingChatBotWithMemory() {
   const [isLoading, setIsLoading] = useState(false)
   const [conversationId, setConversationId] = useState('')
   const [userId, setUserId] = useState('')
-  const [useTestApi, setUseTestApi] = useState(true)
+  const [useTestApi, setUseTestApi] = useState(false) // デフォルトで本番APIを使用
   const [showSettings, setShowSettings] = useState(false)
   const [systemPrompt, setSystemPrompt] = useState('')
   const [tempSystemPrompt, setTempSystemPrompt] = useState('')
@@ -125,10 +125,14 @@ export default function StreamingChatBotWithMemory() {
     try {
       abortControllerRef.current = new AbortController()
 
-      const apiEndpoint = useTestApi ? '/api/chat-stream-test' : '/api/chat-stream-memory'
-      console.log('使用API:', apiEndpoint)
-      console.log('User ID:', userId)
-      console.log('Conversation ID:', conversationId || '新規会話')
+      // デバッグモードを使用
+      const apiEndpoint = useTestApi ? '/api/chat-stream-test' : '/api/chat-stream-memory-debug'
+      console.log('🔍 === デバッグ情報 ===')
+      console.log('📍 使用API:', apiEndpoint)
+      console.log('👤 User ID:', userId)
+      console.log('💬 Conversation ID:', conversationId || '新規会話')
+      console.log('🧠 メモリ機能:', useTestApi ? '無効（テストモード）' : '有効（本番モード）')
+      console.log('====================')
 
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -253,7 +257,8 @@ export default function StreamingChatBotWithMemory() {
               if (parsed.conversation_id) {
                 if (!conversationId || conversationId !== parsed.conversation_id) {
                   setConversationId(parsed.conversation_id)
-                  console.log('Conversation ID updated:', parsed.conversation_id)
+                  console.log('💾 Conversation ID updated:', parsed.conversation_id)
+                  console.log('   メモリ機能が有効になりました。過去の会話を記憶します。')
                 }
               }
             } catch (e) {
