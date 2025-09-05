@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { MessageCircle, Twitter, Facebook, User, Settings } from 'lucide-react'
+import { MessageCircle, Twitter, Facebook, User, Settings, Send, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
 import SettingsModal from './SettingsModal'
 
 // ボットタイプの定義
@@ -66,7 +66,8 @@ export default function MultiBotSelector() {
   const [userId, setUserId] = useState<string | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [customPrompt, setCustomPrompt] = useState<string>('')
-
+  const [isBotSelectorOpen, setIsBotSelectorOpen] = useState(false)
+  
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
@@ -271,42 +272,61 @@ export default function MultiBotSelector() {
     <div className="flex flex-col h-screen bg-gray-50">
       {/* ヘッダー：ボット選択 */}
       <div className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-800">専門ボットを選択</h1>
+        <div className="max-w-6xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setIsBotSelectorOpen(!isBotSelectorOpen)}
+              className="flex items-center gap-2 text-gray-800 hover:text-gray-900 transition-colors"
+            >
+              <h1 className="text-lg md:text-2xl font-bold">
+                {currentBot.name}
+              </h1>
+              {isBotSelectorOpen ? (
+                <ChevronUp className="w-5 h-5" />
+              ) : (
+                <ChevronDown className="w-5 h-5" />
+              )}
+            </button>
             <button
               onClick={() => setIsSettingsOpen(true)}
               className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
               title="カスタムプロンプト設定"
             >
-              <Settings className="w-6 h-6 text-gray-600" />
+              <Settings className="w-5 h-5 md:w-6 md:h-6 text-gray-600" />
             </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {AVAILABLE_BOTS.map((bot) => (
-              <button
-                key={bot.id}
-                onClick={() => setSelectedBot(bot.id)}
-                className={`p-4 rounded-lg border-2 transition-all ${selectedBot === bot.id
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-              >
-                <div className="flex flex-col items-center space-y-2">
-                  <div className={`${selectedBot === bot.id ? 'text-blue-600' : 'text-gray-600'
-                    }`}>
-                    {bot.icon}
+          
+          {/* 開閉可能なボット選択エリア */}
+          {isBotSelectorOpen && (
+            <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 animate-slide-in-from-top">
+              {AVAILABLE_BOTS.map((bot) => (
+                <button
+                  key={bot.id}
+                  onClick={() => {
+                    setSelectedBot(bot.id)
+                    setIsBotSelectorOpen(false) // 選択後は自動で閉じる
+                  }}
+                  className={`p-3 md:p-4 rounded-lg border-2 transition-all ${selectedBot === bot.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                >
+                  <div className="flex flex-col items-center space-y-1 md:space-y-2">
+                    <div className={`${selectedBot === bot.id ? 'text-blue-600' : 'text-gray-600'
+                      }`}>
+                      {bot.icon}
+                    </div>
+                    <div className="text-xs md:text-sm font-medium text-gray-900">
+                      {bot.name}
+                    </div>
+                    <div className="text-xs text-gray-500 hidden md:block">
+                      {bot.description}
+                    </div>
                   </div>
-                  <div className="text-sm font-medium text-gray-900">
-                    {bot.name}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {bot.description}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -360,16 +380,19 @@ export default function MultiBotSelector() {
                 <button
                   onClick={sendMessage}
                   disabled={isLoading || !input.trim()}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="p-2 md:px-4 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                  title="送信"
                 >
-                  {isLoading ? '送信中...' : '送信'}
+                  <Send className="w-5 h-5" />
+                  <span className="hidden md:inline">{isLoading ? '送信中...' : '送信'}</span>
                 </button>
                 <button
                   onClick={resetConversation}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  className="p-2 md:px-4 md:py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
                   title="会話をリセット"
                 >
-                  リセット
+                  <RefreshCw className="w-5 h-5" />
+                  <span className="hidden md:inline">リセット</span>
                 </button>
               </div>
             </div>
