@@ -61,16 +61,11 @@ export default function MultiBotSelector() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [displayedText, setDisplayedText] = useState('')
-  const [isStreaming, setIsStreaming] = useState(false)
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
-  const animationFrameRef = useRef<number | null>(null)
-  const fullTextRef = useRef('')
-  const displayIndexRef = useRef(0)
 
   // ユーザーIDの初期化（メモリ機能用）
   useEffect(() => {
@@ -98,29 +93,7 @@ export default function MultiBotSelector() {
   // スクロール制御
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, displayedText])
-
-  // テキストアニメーション
-  const animateText = useCallback(() => {
-    if (displayIndexRef.current < fullTextRef.current.length) {
-      const batchSize = Math.max(1, Math.floor(fullTextRef.current.length / 100))
-      const nextIndex = Math.min(
-        displayIndexRef.current + batchSize,
-        fullTextRef.current.length
-      )
-      
-      setDisplayedText(fullTextRef.current.slice(0, nextIndex))
-      displayIndexRef.current = nextIndex
-      
-      animationFrameRef.current = requestAnimationFrame(animateText)
-    } else {
-      setIsStreaming(false)
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-        animationFrameRef.current = null
-      }
-    }
-  }, [])
+  }, [messages])
 
   // メッセージ送信処理
   const sendMessage = async () => {
@@ -136,13 +109,19 @@ export default function MultiBotSelector() {
     setMessages(prev => [...prev, userMessage])
     setInput('')
     setIsLoading(true)
-    setIsStreaming(true)
-    fullTextRef.current = ''
-    displayIndexRef.current = 0
-    setDisplayedText('')
 
     // 新しいAbortControllerを作成
     abortControllerRef.current = new AbortController()
+
+    // ストリーミング中のメッセージを追加（空の状態で）
+    const streamingMessage: Message = {
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      botType: selectedBot
+    }
+    setMessages(prev => [...prev, streamingMessage])
+    const streamingMessageIndex = messages.length + 1 // userMessage追加後のインデックス
 
     try {
       const response = await fetch(currentBot.apiEndpoint, {
@@ -171,6 +150,7 @@ export default function MultiBotSelector() {
       }
 
       let buffer = ''
+      let accumulatedText = ''
 
       while (true) {
         const { done, value } = await reader.read()
@@ -193,11 +173,19 @@ export default function MultiBotSelector() {
               const parsed = JSON.parse(data)
               
               if (parsed.event === 'message') {
-                fullTextRef.current += parsed.answer || ''
+                accumulatedText += parsed.answer || ''
                 
-                if (!animationFrameRef.current) {
-                  animationFrameRef.current = requestAnimationFrame(animateText)
-                }
+                // ストリーミング中のメッセージを更新
+                setMessages(prev => {
+                  const newMessages = [...prev]
+                  if (newMessages[streamingMessageIndex]) {
+                    newMessages[streamingMessageIndex] = {
+                      ...newMessages[streamingMessageIndex],
+                      content: accumulatedText
+                    }
+                  }
+                  return newMessages
+                })
               } else if (parsed.event === 'message_end') {
                 // conversation_idを保存（ボットごとに）
                 if (parsed.conversation_id) {
@@ -213,40 +201,41 @@ export default function MultiBotSelector() {
         }
       }
 
-      // 最終的なメッセージを追加
-      if (fullTextRef.current) {
-        const assistantMessage: Message = {
-          role: 'assistant',
-          content: fullTextRef.current,
-          timestamp: new Date(),
-          botType: selectedBot
-        }
-        setMessages(prev => [...prev, assistantMessage])
+      // 最終的なメッセージを確定
+      if (accumulatedText) {
+        setMessages(prev => {
+          const newMessages = [...prev]
+          if (newMessages[streamingMessageIndex]) {
+            newMessages[streamingMessageIndex] = {
+              ...newMessages[streamingMessageIndex],
+              content: accumulatedText
+            }
+          }
+          return newMessages
+        })
       }
 
     } catch (error: any) {
       if (error.name === 'AbortError') {
         console.log('Request was cancelled')
+        // キャンセル時は空のメッセージを削除
+        setMessages(prev => prev.filter((_, index) => index !== streamingMessageIndex))
       } else {
         console.error('Error:', error)
-        const errorMessage: Message = {
-          role: 'assistant',
-          content: 'エラーが発生しました。もう一度お試しください。',
-          timestamp: new Date(),
-          botType: selectedBot
-        }
-        setMessages(prev => [...prev, errorMessage])
+        // エラー時はメッセージを更新
+        setMessages(prev => {
+          const newMessages = [...prev]
+          if (newMessages[streamingMessageIndex]) {
+            newMessages[streamingMessageIndex] = {
+              ...newMessages[streamingMessageIndex],
+              content: 'エラーが発生しました。もう一度お試しください。'
+            }
+          }
+          return newMessages
+        })
       }
     } finally {
       setIsLoading(false)
-      setIsStreaming(false)
-      setDisplayedText('')
-      fullTextRef.current = ''
-      displayIndexRef.current = 0
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-        animationFrameRef.current = null
-      }
     }
   }
 
@@ -272,16 +261,14 @@ export default function MultiBotSelector() {
               <button
                 key={bot.id}
                 onClick={() => setSelectedBot(bot.id)}
-                className={`p-4 rounded-lg border-2 transition-all ${
-                  selectedBot === bot.id
+                className={`p-4 rounded-lg border-2 transition-all ${selectedBot === bot.id
                     ? 'border-blue-500 bg-blue-50'
                     : 'border-gray-200 bg-white hover:border-gray-300'
-                }`}
+                  }`}
               >
                 <div className="flex flex-col items-center space-y-2">
-                  <div className={`${
-                    selectedBot === bot.id ? 'text-blue-600' : 'text-gray-600'
-                  }`}>
+                  <div className={`${selectedBot === bot.id ? 'text-blue-600' : 'text-gray-600'
+                    }`}>
                     {bot.icon}
                   </div>
                   <div className="text-sm font-medium text-gray-900">
@@ -309,37 +296,25 @@ export default function MultiBotSelector() {
                 <p className="text-sm mt-2">{currentBot.description}</p>
               </div>
             )}
-            
+
             {filteredMessages.map((message, index) => (
               <div
                 key={index}
-                className={`flex ${
-                  message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'
+                  }`}
               >
                 <div
-                  className={`max-w-2xl px-4 py-2 rounded-lg ${
-                    message.role === 'user'
+                  className={`max-w-2xl px-4 py-2 rounded-lg ${message.role === 'user'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white border border-gray-200 text-gray-800'
-                  }`}
+                    }`}
                 >
                   <p className="whitespace-pre-wrap">{message.content}</p>
                 </div>
               </div>
             ))}
-            
-            {isStreaming && (
-              <div className="flex justify-start">
-                <div className="max-w-2xl px-4 py-2 rounded-lg bg-white border border-gray-200">
-                  <p className="whitespace-pre-wrap text-gray-800">{displayedText}</p>
-                  {displayedText.length === 0 && (
-                    <span className="inline-block animate-pulse">●●●</span>
-                  )}
-                </div>
-              </div>
-            )}
-            
+
+
             <div ref={messagesEndRef} />
           </div>
 
