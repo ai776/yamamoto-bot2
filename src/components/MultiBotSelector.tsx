@@ -66,7 +66,7 @@ export default function MultiBotSelector() {
   const [userId, setUserId] = useState<string | null>(null)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [customPrompt, setCustomPrompt] = useState<string>('')
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
@@ -88,7 +88,7 @@ export default function MultiBotSelector() {
     const botConversationKey = `conversationId_${selectedBot}`
     const storedConversationId = sessionStorage.getItem(botConversationKey)
     setConversationId(storedConversationId)
-    
+
     // カスタムプロンプトを読み込み
     const savedPrompt = localStorage.getItem(`customPrompt_${selectedBot}`)
     if (savedPrompt) {

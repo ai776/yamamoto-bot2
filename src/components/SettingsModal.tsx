@@ -102,7 +102,7 @@ export default function SettingsModal({ isOpen, onClose, botType, onSave }: Sett
     }
   }
 
-  const presets = getPresets()
+  const presets = getPresets() as Record<string, { name: string; prompt: string }>
 
   // 初期化：保存されたプロンプトを読み込み
   useEffect(() => {
