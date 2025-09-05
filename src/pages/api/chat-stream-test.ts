@@ -78,7 +78,7 @@ export default async function handler(
         message_id: `msg_${Date.now()}`,
         created_at: new Date().toISOString()
       })}\n\n`)
-      
+
       res.write('data: [DONE]\n\n')
       res.end()
       clearInterval(streamInterval)
