@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { MessageCircle, Twitter, Facebook, User } from 'lucide-react'
+import { MessageCircle, Twitter, Facebook, User, Settings } from 'lucide-react'
+import SettingsModal from './SettingsModal'
 
 // ボットタイプの定義
 export type BotType = 'yamamoto' | 'x' | 'facebook' | 'profile'
@@ -63,6 +64,8 @@ export default function MultiBotSelector() {
   const [isLoading, setIsLoading] = useState(false)
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [userId, setUserId] = useState<string | null>(null)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [customPrompt, setCustomPrompt] = useState<string>('')
   
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -85,6 +88,14 @@ export default function MultiBotSelector() {
     const botConversationKey = `conversationId_${selectedBot}`
     const storedConversationId = sessionStorage.getItem(botConversationKey)
     setConversationId(storedConversationId)
+    
+    // カスタムプロンプトを読み込み
+    const savedPrompt = localStorage.getItem(`customPrompt_${selectedBot}`)
+    if (savedPrompt) {
+      setCustomPrompt(savedPrompt)
+    } else {
+      setCustomPrompt('')
+    }
   }, [selectedBot])
 
   // 現在選択されているボットの情報を取得
@@ -133,7 +144,8 @@ export default function MultiBotSelector() {
           message: userMessage.content,
           conversation_id: conversationId,
           user: userId,
-          botType: selectedBot
+          botType: selectedBot,
+          customPrompt: customPrompt || undefined
         }),
         signal: abortControllerRef.current.signal
       })
@@ -154,7 +166,7 @@ export default function MultiBotSelector() {
 
       while (true) {
         const { done, value } = await reader.read()
-        
+
         if (done) break
 
         buffer += decoder.decode(value, { stream: true })
@@ -164,17 +176,17 @@ export default function MultiBotSelector() {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6)
-            
+
             if (data === '[DONE]') {
               continue
             }
 
             try {
               const parsed = JSON.parse(data)
-              
+
               if (parsed.event === 'message') {
                 accumulatedText += parsed.answer || ''
-                
+
                 // ストリーミング中のメッセージを更新
                 setMessages(prev => {
                   const newMessages = [...prev]
@@ -250,20 +262,34 @@ export default function MultiBotSelector() {
   // 現在のボットのメッセージのみをフィルタリング
   const filteredMessages = messages.filter(msg => msg.botType === selectedBot)
 
+  // カスタムプロンプトの保存処理
+  const handleSaveCustomPrompt = (prompt: string) => {
+    setCustomPrompt(prompt)
+  }
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* ヘッダー：ボット選択 */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-6xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">専門ボットを選択</h1>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-gray-800">専門ボットを選択</h1>
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              title="カスタムプロンプト設定"
+            >
+              <Settings className="w-6 h-6 text-gray-600" />
+            </button>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {AVAILABLE_BOTS.map((bot) => (
               <button
                 key={bot.id}
                 onClick={() => setSelectedBot(bot.id)}
                 className={`p-4 rounded-lg border-2 transition-all ${selectedBot === bot.id
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 bg-white hover:border-gray-300'
                   }`}
               >
                 <div className="flex flex-col items-center space-y-2">
@@ -305,8 +331,8 @@ export default function MultiBotSelector() {
               >
                 <div
                   className={`max-w-2xl px-4 py-2 rounded-lg ${message.role === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white border border-gray-200 text-gray-800'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white border border-gray-200 text-gray-800'
                     }`}
                 >
                   <p className="whitespace-pre-wrap">{message.content}</p>
@@ -350,6 +376,14 @@ export default function MultiBotSelector() {
           </div>
         </div>
       </div>
+
+      {/* 設定モーダル */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        botType={selectedBot}
+        onSave={handleSaveCustomPrompt}
+      />
     </div>
   )
 }
