@@ -51,8 +51,9 @@ export default async function handler(
 
   // ストリーミングシミュレーション
   const words = answer.split('')
-  const chunkSize = 3 // 3文字ずつ送信
+  const chunkSize = 5 // 5文字ずつ送信（より自然な速度）
   let currentIndex = 0
+  let isCompleted = false
 
   // 初回のconversation_id送信
   res.write(`data: ${JSON.stringify({
@@ -64,6 +65,10 @@ export default async function handler(
 
   // テキストをチャンクごとに送信
   const streamInterval = setInterval(() => {
+    if (isCompleted) {
+      return
+    }
+
     if (currentIndex >= words.length) {
       // 完了通知
       res.write(`data: ${JSON.stringify({
@@ -73,31 +78,50 @@ export default async function handler(
         message_id: `msg_${Date.now()}`,
         created_at: new Date().toISOString()
       })}\n\n`)
-
+      
       res.write('data: [DONE]\n\n')
       res.end()
       clearInterval(streamInterval)
+      isCompleted = true
       return
     }
 
     const chunk = words.slice(currentIndex, currentIndex + chunkSize).join('')
     currentIndex += chunkSize
 
-    res.write(`data: ${JSON.stringify({
-      event: 'message',
-      answer: chunk,
-      conversation_id: responseConversationId,
-      message_id: `msg_${Date.now()}`,
-      created_at: new Date().toISOString()
-    })}\n\n`)
-  }, 50) // 50msごとに送信（タイピング効果）
-
-  // タイムアウト設定（30秒で強制終了）
-  setTimeout(() => {
-    clearInterval(streamInterval)
-    if (!res.writableEnded) {
-      res.write('data: [DONE]\n\n')
-      res.end()
+    try {
+      res.write(`data: ${JSON.stringify({
+        event: 'message',
+        answer: chunk,
+        conversation_id: responseConversationId,
+        message_id: `msg_${Date.now()}`,
+        created_at: new Date().toISOString()
+      })}\n\n`)
+    } catch (error) {
+      console.error('Error writing to stream:', error)
+      clearInterval(streamInterval)
+      isCompleted = true
     }
-  }, 30000)
+  }, 40) // 40msごとに送信（安定性向上）
+
+  // タイムアウト設定（60秒で強制終了）
+  setTimeout(() => {
+    if (!isCompleted) {
+      clearInterval(streamInterval)
+      if (!res.writableEnded) {
+        res.write('data: [DONE]\n\n')
+        res.end()
+      }
+      isCompleted = true
+    }
+  }, 60000)
+
+  // クライアント切断時の処理
+  req.on('close', () => {
+    if (!isCompleted) {
+      clearInterval(streamInterval)
+      isCompleted = true
+      console.log('Client disconnected')
+    }
+  })
 }

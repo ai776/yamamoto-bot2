@@ -131,9 +131,17 @@ export default function StreamingChatBotTest() {
 
         streamingIntervalRef.current = setInterval(() => {
           if (streamingQueueRef.current.length > 0) {
-            const char = streamingQueueRef.current.shift()
-            if (char) {
-              displayedText += char
+            // 一度に処理する文字数を動的に調整
+            const batchSize = streamingQueueRef.current.length > 50 ? 2 : 1
+            let chars = ''
+            for (let i = 0; i < batchSize && streamingQueueRef.current.length > 0; i++) {
+              const char = streamingQueueRef.current.shift()
+              if (char) {
+                chars += char
+              }
+            }
+            if (chars) {
+              displayedText += chars
               setMessages(prev => prev.map(msg =>
                 msg.id === botMessageId
                   ? { ...msg, text: displayedText }
@@ -141,7 +149,7 @@ export default function StreamingChatBotTest() {
               ))
             }
           }
-        }, 25)  // 25msごとに1文字表示（ChatGPT風の速度）
+        }, 20)  // 20msごとに処理（より滑らか）
       }
 
       // ストリーミング開始
