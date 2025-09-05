@@ -40,12 +40,11 @@ export default async function handler(
 
     // リクエストボディ作成
     const requestBody: any = {
-      inputs: {
-        system_prompt: system_prompt || ''
-      },
+      inputs: {},  // inputsは必須だが空でOK（Dify APIの仕様）
       query: message,
       response_mode: 'streaming', // ストリーミングモード
-      user: 'default_user'
+      user: 'default_user',
+      files: []  // filesも必須（空配列でOK）
     }
 
     if (conversation_id && conversation_id !== 'null' && conversation_id !== '') {

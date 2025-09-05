@@ -47,16 +47,12 @@ export default async function handler(
     })
 
     // リクエストボディ作成（メモリ機能対応）
+    // Dify APIの正しい形式に修正
     const requestBody: any = {
-      inputs: {},  // inputsは空のオブジェクトにする
+      inputs: {},  // inputsは必須だが空でOK
       query: message,
       response_mode: 'streaming',
       user: user || `user_${Date.now()}`,  // ユーザー識別子（メモリ機能で重要）
-    }
-
-    // system_promptをinputsに追加（Difyの仕様に合わせる）
-    if (system_prompt) {
-      requestBody.inputs.system_prompt = system_prompt
     }
 
     // conversation_idがある場合のみ追加（継続的な会話）
@@ -64,10 +60,8 @@ export default async function handler(
       requestBody.conversation_id = conversation_id
     }
 
-    // filesがある場合は追加
-    if (files && files.length > 0) {
-      requestBody.files = files
-    }
+    // filesは配列でなければならない（空配列でもOK）
+    requestBody.files = files || []
 
     console.log('📤 Sending to Dify:', {
       url: `${apiUrl}/chat-messages`,
@@ -95,7 +89,7 @@ export default async function handler(
     if (!response.ok) {
       const errorData = await response.json()
       console.error('❌ Dify API Error:', JSON.stringify(errorData, null, 2))
-      
+
       res.write(`data: ${JSON.stringify({
         event: 'error',
         message: errorData.message || 'API Error',
@@ -123,7 +117,7 @@ export default async function handler(
 
     while (true) {
       const { done, value } = await reader.read()
-      
+
       if (done) {
         console.log('✅ Stream completed. Total chars received:', totalChars)
         res.write('data: [DONE]\n\n')
@@ -133,7 +127,7 @@ export default async function handler(
 
       // デコードしてバッファに追加
       buffer += decoder.decode(value, { stream: true })
-      
+
       // 改行で分割して各行を処理
       const lines = buffer.split('\n')
       buffer = lines.pop() || '' // 最後の不完全な行をバッファに残す
@@ -141,7 +135,7 @@ export default async function handler(
       for (const line of lines) {
         if (line.startsWith('data: ')) {
           const data = line.slice(6).trim()
-          
+
           if (data === '[DONE]') {
             console.log('📍 Received [DONE] signal')
             continue
@@ -149,7 +143,7 @@ export default async function handler(
 
           try {
             const parsed = JSON.parse(data)
-            
+
             // デバッグ: 受信したデータの構造を確認
             if (!conversationIdSent && parsed.conversation_id) {
               console.log('💾 Conversation ID (for memory):', parsed.conversation_id)
@@ -191,7 +185,7 @@ export default async function handler(
   } catch (error: any) {
     console.error('❌ Streaming Error:', error)
     console.error('Stack trace:', error.stack)
-    
+
     // エラーイベントを送信
     res.write(`data: ${JSON.stringify({
       event: 'error',

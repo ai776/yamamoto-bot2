@@ -35,12 +35,11 @@ export default async function handler(
   try {
     // リクエストボディを作成
     const requestBody: any = {
-      inputs: {
-        system_prompt: system_prompt || ''
-      },
+      inputs: {},  // inputsは必須だが空でOK（Dify APIの仕様）
       query: message,
       response_mode: 'blocking',
-      user: 'default_user' // 固定のユーザー識別子
+      user: 'default_user', // 固定のユーザー識別子
+      files: []  // filesも必須（空配列でOK）
     }
 
     // conversation_idがある場合のみ追加
