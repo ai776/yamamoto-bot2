@@ -8,7 +8,7 @@ export default function TestApiPage() {
   const runTest = async () => {
     setIsLoading(true)
     setTestResult(null)
-    
+
     try {
       const response = await fetch('/api/test-dify-connection')
       const data = await response.json()
@@ -34,12 +34,12 @@ export default function TestApiPage() {
       <main className="min-h-screen bg-gray-100 p-4">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-2xl font-bold mb-4">🔍 Dify API接続テスト</h1>
-          
+
           <div className="bg-white rounded-lg shadow p-6 mb-4">
             <p className="text-gray-600 mb-4">
               このページでは、Dify APIへの接続とリクエスト形式をテストします。
             </p>
-            
+
             <button
               onClick={runTest}
               disabled={isLoading}
@@ -52,12 +52,11 @@ export default function TestApiPage() {
           {testResult && (
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold mb-3">テスト結果</h2>
-              
-              <div className={`p-3 rounded mb-4 ${
-                testResult.status === 'success' 
-                  ? 'bg-green-100 text-green-800' 
+
+              <div className={`p-3 rounded mb-4 ${testResult.status === 'success'
+                  ? 'bg-green-100 text-green-800'
                   : 'bg-red-100 text-red-800'
-              }`}>
+                }`}>
                 <div className="font-semibold">
                   {testResult.status === 'success' ? '✅ 成功' : '❌ エラー'}
                 </div>

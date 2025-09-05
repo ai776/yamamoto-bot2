@@ -47,7 +47,7 @@ export default async function handler(
     })
 
     // リクエストボディ作成（メモリ機能対応）
-    // Dify APIの正しい形式に修正
+    // テストで確認した動作する形式を使用
     const requestBody: any = {
       inputs: {},  // inputsは必須だが空でOK
       query: message,
@@ -60,8 +60,7 @@ export default async function handler(
       requestBody.conversation_id = conversation_id
     }
 
-    // filesは配列でなければならない（空配列でもOK）
-    requestBody.files = files || []
+    // filesパラメータは不要（テストで確認済み）
 
     console.log('📤 Sending to Dify:', {
       url: `${apiUrl}/chat-messages`,

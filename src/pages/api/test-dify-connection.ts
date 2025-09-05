@@ -15,7 +15,7 @@ export default async function handler(
   console.log('API URL:', apiUrl)
 
   if (!apiKey) {
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: 'DIFY_API_KEY is not set',
       solution: 'Vercelの環境変数にDIFY_API_KEYを設定してください'
     })
@@ -42,22 +42,22 @@ export default async function handler(
     })
 
     const result1 = await response1.json()
-    
+
     if (!response1.ok) {
       console.error('❌ Test 1 failed:', result1)
-      
+
       // エラーの詳細を分析
       if (result1.message?.includes('validation')) {
         console.log('📝 Validation error details:', result1)
-        
+
         // テスト2: filesを追加
         const withFilesRequest = {
           ...minimalRequest,
           files: []
         }
-        
+
         console.log('📤 Test 2 - With files:', JSON.stringify(withFilesRequest, null, 2))
-        
+
         const response2 = await fetch(`${apiUrl}/chat-messages`, {
           method: 'POST',
           headers: {
@@ -66,12 +66,12 @@ export default async function handler(
           },
           body: JSON.stringify(withFilesRequest)
         })
-        
+
         const result2 = await response2.json()
-        
+
         if (!response2.ok) {
           console.error('❌ Test 2 also failed:', result2)
-          
+
           // テスト3: 別の形式を試す
           const alternativeRequest = {
             query: "こんにちは",
@@ -79,9 +79,9 @@ export default async function handler(
             response_mode: "blocking",
             inputs: {}
           }
-          
+
           console.log('📤 Test 3 - Alternative format:', JSON.stringify(alternativeRequest, null, 2))
-          
+
           const response3 = await fetch(`${apiUrl}/chat-messages`, {
             method: 'POST',
             headers: {
@@ -90,9 +90,9 @@ export default async function handler(
             },
             body: JSON.stringify(alternativeRequest)
           })
-          
+
           const result3 = await response3.json()
-          
+
           return res.status(200).json({
             status: 'error',
             message: 'All tests failed',

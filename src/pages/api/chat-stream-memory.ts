@@ -41,13 +41,12 @@ export default async function handler(
     })
 
     // リクエストボディ作成（メモリ機能対応）
-    // Dify APIの正しい形式
+    // テストで確認した動作する形式を使用
     const requestBody: any = {
       inputs: {},  // inputsは必須だが空でOK
       query: message,
       response_mode: 'streaming',
-      user: user || 'default_user',  // ユーザー識別子（メモリ機能で重要）
-      files: files || []  // ファイルアップロード対応（空配列でOK）
+      user: user || 'default_user'  // ユーザー識別子（メモリ機能で重要）
     }
 
     // conversation_idがある場合のみ追加（継続的な会話）

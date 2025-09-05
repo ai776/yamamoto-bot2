@@ -43,8 +43,7 @@ export default async function handler(
       inputs: {},  // inputsは必須だが空でOK（Dify APIの仕様）
       query: message,
       response_mode: 'streaming', // ストリーミングモード
-      user: 'default_user',
-      files: []  // filesも必須（空配列でOK）
+      user: 'default_user'
     }
 
     if (conversation_id && conversation_id !== 'null' && conversation_id !== '') {

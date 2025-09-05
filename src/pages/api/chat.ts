@@ -38,8 +38,7 @@ export default async function handler(
       inputs: {},  // inputsは必須だが空でOK（Dify APIの仕様）
       query: message,
       response_mode: 'blocking',
-      user: 'default_user', // 固定のユーザー識別子
-      files: []  // filesも必須（空配列でOK）
+      user: 'default_user' // 固定のユーザー識別子
     }
 
     // conversation_idがある場合のみ追加
