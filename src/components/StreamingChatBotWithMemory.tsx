@@ -43,17 +43,50 @@ const DEFAULT_SYSTEM_PROMPT = `あなたは「ビジネスサイボーグ」山�
 ■ゴール：
 ユーザーが「すぐに行動できるような現場レベルのアドバイス」を届けること。チャットボットではなく"山本智也という実在のビジネスの先輩"として導いてください。`
 
-export default function StreamingChatBotImproved() {
+export default function StreamingChatBotWithMemory() {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [conversationId, setConversationId] = useState('')
+  const [userId, setUserId] = useState('')
   const [useTestApi, setUseTestApi] = useState(true)
-  const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT)
+  const [showSettings, setShowSettings] = useState(false)
+  const [systemPrompt, setSystemPrompt] = useState('')
+  const [tempSystemPrompt, setTempSystemPrompt] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const currentMessageRef = useRef<string>('')
   const animationFrameRef = useRef<number | null>(null)
+
+  // 初期化時にユーザーIDとプロンプトを設定
+  useEffect(() => {
+    // ユーザーIDを生成または取得（ローカルストレージに保存）
+    let storedUserId = localStorage.getItem('dify_user_id')
+    if (!storedUserId) {
+      storedUserId = `user_${Date.now()}_${Math.random().toString(36).substring(7)}`
+      localStorage.setItem('dify_user_id', storedUserId)
+    }
+    setUserId(storedUserId)
+
+    // 会話IDを取得（セッション単位で管理）
+    const storedConversationId = sessionStorage.getItem('dify_conversation_id')
+    if (storedConversationId) {
+      setConversationId(storedConversationId)
+    }
+
+    // システムプロンプトを読み込む
+    const savedPrompt = localStorage.getItem('systemPrompt')
+    const prompt = savedPrompt || DEFAULT_SYSTEM_PROMPT
+    setSystemPrompt(prompt)
+    setTempSystemPrompt(prompt)
+  }, [])
+
+  // 会話IDが更新されたらセッションストレージに保存
+  useEffect(() => {
+    if (conversationId) {
+      sessionStorage.setItem('dify_conversation_id', conversationId)
+    }
+  }, [conversationId])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -92,8 +125,10 @@ export default function StreamingChatBotImproved() {
     try {
       abortControllerRef.current = new AbortController()
 
-      const apiEndpoint = useTestApi ? '/api/chat-stream-test' : '/api/chat-stream'
+      const apiEndpoint = useTestApi ? '/api/chat-stream-test' : '/api/chat-stream-memory'
       console.log('使用API:', apiEndpoint)
+      console.log('User ID:', userId)
+      console.log('Conversation ID:', conversationId || '新規会話')
 
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -103,7 +138,9 @@ export default function StreamingChatBotImproved() {
         body: JSON.stringify({
           message: inputText,
           conversation_id: conversationId,
-          system_prompt: systemPrompt
+          user: userId,  // ユーザーIDを送信（メモリ機能で重要）
+          system_prompt: systemPrompt,
+          files: []  // ファイルアップロード対応（将来の拡張用）
         }),
         signal: abortControllerRef.current.signal
       })
@@ -212,10 +249,12 @@ export default function StreamingChatBotImproved() {
                 }
               }
 
-              // conversation_idを更新
-              if (parsed.conversation_id && !conversationId) {
-                setConversationId(parsed.conversation_id)
-                console.log('Conversation ID set:', parsed.conversation_id)
+              // conversation_idを更新（重要：メモリ機能の継続性）
+              if (parsed.conversation_id) {
+                if (!conversationId || conversationId !== parsed.conversation_id) {
+                  setConversationId(parsed.conversation_id)
+                  console.log('Conversation ID updated:', parsed.conversation_id)
+                }
               }
             } catch (e) {
               console.error('Failed to parse SSE data:', e, 'Raw data:', data)
@@ -266,41 +305,129 @@ export default function StreamingChatBotImproved() {
   const resetConversation = () => {
     setMessages([])
     setConversationId('')
+    sessionStorage.removeItem('dify_conversation_id')
     currentMessageRef.current = ''
-    console.log('会話をリセットしました')
+    console.log('会話をリセットしました（メモリはユーザーIDに紐付いて保持）')
+  }
+
+  const toggleSettings = () => {
+    setShowSettings(!showSettings)
+    if (!showSettings) {
+      setTempSystemPrompt(systemPrompt)
+    }
+  }
+
+  const saveSettings = () => {
+    setSystemPrompt(tempSystemPrompt)
+    localStorage.setItem('systemPrompt', tempSystemPrompt)
+    setShowSettings(false)
+    // 会話をリセット（新しいプロンプトで開始）
+    resetConversation()
+  }
+
+  const resetToDefault = () => {
+    setTempSystemPrompt(DEFAULT_SYSTEM_PROMPT)
+  }
+
+  const cancelSettings = () => {
+    setTempSystemPrompt(systemPrompt)
+    setShowSettings(false)
   }
 
   return (
-    <div className="flex flex-col h-full max-w-md mx-auto bg-gray-100">
+    <div className="flex flex-col h-full max-w-md mx-auto bg-gray-100 relative">
       {/* ヘッダー */}
-      <div className="bg-line-blue text-white p-4 flex items-center justify-between shadow-md">
+      <div className="bg-line-blue text-white p-4 flex items-center justify-between shadow-md z-20 relative">
         <div className="flex items-center">
           <h1 className="text-lg font-semibold">山本智也</h1>
-          <span className="ml-2 text-xs bg-green-500 px-2 py-1 rounded">改善版</span>
+          <span className="ml-2 text-xs bg-purple-500 px-2 py-1 rounded">メモリ機能付き</span>
         </div>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setUseTestApi(!useTestApi)}
-            className="px-3 py-1 bg-white/20 rounded text-xs"
-          >
-            {useTestApi ? 'テストAPI' : '本番API'}
-          </button>
-          <button
-            onClick={resetConversation}
-            className="px-3 py-1 bg-white/20 rounded text-xs"
-          >
-            リセット
+        <div className="flex items-center space-x-4">
+          <button onClick={toggleSettings} className="p-1">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
           </button>
         </div>
       </div>
 
-      {/* デバッグ情報 */}
-      <div className="bg-yellow-100 p-2 text-xs">
-        <div>会話ID: {conversationId || '(新規)'}</div>
-        <div>メッセージ数: {messages.length}</div>
-        <div>API: {useTestApi ? 'テストモード（モック）' : '本番モード（Dify）'}</div>
-        <div>ストリーミング: requestAnimationFrame使用 ✅</div>
-      </div>
+      {/* 設定パネル */}
+      {showSettings && (
+        <div className="absolute inset-0 z-30 bg-white flex flex-col">
+          <div className="bg-line-blue text-white p-4 flex items-center justify-between shadow-md">
+            <h2 className="text-lg font-semibold">設定</h2>
+            <button onClick={cancelSettings} className="p-1">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="mb-4">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">メモリ機能情報</h3>
+              <div className="bg-gray-100 p-3 rounded-lg text-xs">
+                <div className="mb-1">👤 ユーザーID: {userId}</div>
+                <div className="mb-1">💬 会話ID: {conversationId || '新規'}</div>
+                <div className="mb-1">🧠 メモリ: 最大10メッセージ保持</div>
+                <div>📌 会話履歴はユーザーIDに紐付いて保存されます</div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                システムプロンプト
+              </label>
+              <textarea
+                value={tempSystemPrompt}
+                onChange={(e) => setTempSystemPrompt(e.target.value)}
+                className="w-full h-64 p-3 border border-gray-300 rounded-lg text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-line-blue"
+                placeholder="AIの振る舞いを定義..."
+              />
+            </div>
+
+            <div className="flex space-x-2 mb-4">
+              <button
+                onClick={saveSettings}
+                className="flex-1 bg-line-blue text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
+              >
+                保存して適用
+              </button>
+              <button
+                onClick={resetToDefault}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                デフォルトに戻す
+              </button>
+            </div>
+
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setUseTestApi(!useTestApi)}
+                className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                API: {useTestApi ? 'テストモード' : '本番モード'}
+              </button>
+              <button
+                onClick={resetConversation}
+                className="flex-1 bg-red-100 text-red-700 py-2 px-4 rounded-lg hover:bg-red-200 transition-colors"
+              >
+                会話リセット
+              </button>
+            </div>
+
+            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-xs text-yellow-800">
+                <strong>メモリ機能について：</strong><br />
+                • 過去10件の会話を記憶します<br />
+                • ユーザーIDごとに会話履歴が保存されます<br />
+                • 会話リセットで新しい会話を開始できます<br />
+                • ブラウザを閉じても会話履歴は保持されます
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* メッセージエリア */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
@@ -350,6 +477,7 @@ export default function StreamingChatBotImproved() {
             placeholder="メッセージを入力..."
             className="flex-1 px-4 py-2 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-line-blue"
             disabled={isLoading}
+            style={{ position: 'relative', zIndex: 10 }}
           />
           {isLoading ? (
             <button
