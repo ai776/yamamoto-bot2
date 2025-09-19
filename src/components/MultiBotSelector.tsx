@@ -67,7 +67,7 @@ export default function MultiBotSelector() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [customPrompt, setCustomPrompt] = useState<string>('')
   const [isBotSelectorOpen, setIsBotSelectorOpen] = useState(false)
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
@@ -295,7 +295,7 @@ export default function MultiBotSelector() {
               <Settings className="w-5 h-5 md:w-6 md:h-6 text-gray-600" />
             </button>
           </div>
-          
+
           {/* 開閉可能なボット選択エリア */}
           {isBotSelectorOpen && (
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 animate-slide-in-from-top">
