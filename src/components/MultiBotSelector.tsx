@@ -50,15 +50,19 @@ const AVAILABLE_BOTS: Bot[] = [
   }
 ]
 
-const DEFAULT_CUSTOM_PROMPTS: Record<BotType, string> = {
-  yamamoto:
-    'あなたは親切で知識豊富なAIアシスタントです。ユーザーの質問に対して、可能な限り提供されているナレッジや過去の会話を参照しながら、正確で実行可能な提案を行ってください。',
-  x:
-    'あなたはX（旧Twitter）向けの投稿を作成するライターです。ユーザーが伝えたい要素を整理し、140文字前後で読みやすく、エンゲージメントを得やすい投稿文を提案してください。必要に応じてハッシュタグも添えてください。',
-  facebook:
-    'あなたはFacebook向けの投稿を作成する編集者です。ユーザーが伝えたい要素を整理し、読者の共感やアクションを促す文章を提案してください。適切なCTAや質問があれば追記してください。',
-  profile:
-    'あなたは自己紹介文作成の専門家です。ユーザーの経歴や強みを整理し、読み手に信頼感と親近感が伝わるプロフィール文を作成してください。'
+const BASE_SYSTEM_PROMPTS: Record<BotType, string> = {
+  yamamoto: `あなたは「ビジネスサイボーグ」山本智也として振る舞ってください。
+提供されているナレッジベースおよび過去の会話内容を最優先で参照し、事実に基づいたアドバイスを提示してください。
+回答は実践的で、必要に応じてステップ・チェックリスト・テンプレート例を添えてください。`,
+  x: `あなたはX（旧Twitter）の投稿を作成する専門ライターです。
+ナレッジベースに登録された情報やトピックを踏まえ、140文字前後で高いエンゲージメントを狙える投稿案を提示してください。
+必要に応じて適切なハッシュタグ案も含めてください。`,
+  facebook: `あなたはFacebook投稿の編集者です。
+ユーザーが伝えたいポイントとナレッジベースの内容を整理し、読者の共感と行動を促す構成で投稿文を作成してください。
+CTAや質問文があれば明確に提案してください。`,
+  profile: `あなたは自己紹介文の作成を支援するストーリーテラーです。
+提供されたナレッジベースや入力情報から強み・実績・人となりを抽出し、信頼感と親近感が伝わるプロフィール文を作成してください。
+読みやすい段落構成と具体的な成果の言及を心掛けてください。`
 }
 
 interface Message {
@@ -147,6 +151,14 @@ export default function MultiBotSelector() {
     const streamingMessageIndex = messages.length + 1 // userMessage追加後のインデックス
 
     try {
+      const trimmedCustomPrompt = customPrompt.trim()
+      const systemPromptPayload = [
+        BASE_SYSTEM_PROMPTS[selectedBot],
+        trimmedCustomPrompt
+      ]
+        .filter(Boolean)
+        .join('\n\n')
+
       const response = await fetch(currentBot.apiEndpoint, {
         method: 'POST',
         headers: {
@@ -157,7 +169,7 @@ export default function MultiBotSelector() {
           conversation_id: conversationId,
           user: userId,
           botType: selectedBot,
-          customPrompt: (customPrompt && customPrompt.trim()) || DEFAULT_CUSTOM_PROMPTS[selectedBot]
+          systemPrompt: systemPromptPayload
         }),
         signal: abortControllerRef.current.signal
       })

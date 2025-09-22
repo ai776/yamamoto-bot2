@@ -8,7 +8,7 @@ export default async function handler(
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const { message, conversation_id, user, customPrompt } = req.body
+  const { message, conversation_id, user, systemPrompt, customPrompt } = req.body
 
   if (!message) {
     return res.status(400).json({ error: 'Message is required' })
@@ -40,9 +40,18 @@ export default async function handler(
       user: user || `user_${Date.now()}`,
     }
 
-    // カスタムプロンプトがある場合は、メッセージに組み込む
-    if (customPrompt) {
-      requestBody.query = `${customPrompt}\n\nユーザーの要望: ${message}`
+    const resolvedSystemPrompt: string | undefined = (() => {
+      if (typeof systemPrompt === 'string' && systemPrompt.trim()) {
+        return systemPrompt.trim()
+      }
+      if (typeof customPrompt === 'string' && customPrompt.trim()) {
+        return customPrompt.trim()
+      }
+      return undefined
+    })()
+
+    if (resolvedSystemPrompt) {
+      requestBody.inputs.system_prompt = resolvedSystemPrompt
     }
 
     if (conversation_id && conversation_id !== 'null' && conversation_id !== '') {
