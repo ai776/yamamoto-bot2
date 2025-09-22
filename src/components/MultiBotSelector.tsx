@@ -50,6 +50,17 @@ const AVAILABLE_BOTS: Bot[] = [
   }
 ]
 
+const DEFAULT_CUSTOM_PROMPTS: Record<BotType, string> = {
+  yamamoto:
+    'あなたは親切で知識豊富なAIアシスタントです。ユーザーの質問に対して、可能な限り提供されているナレッジや過去の会話を参照しながら、正確で実行可能な提案を行ってください。',
+  x:
+    'あなたはX（旧Twitter）向けの投稿を作成するライターです。ユーザーが伝えたい要素を整理し、140文字前後で読みやすく、エンゲージメントを得やすい投稿文を提案してください。必要に応じてハッシュタグも添えてください。',
+  facebook:
+    'あなたはFacebook向けの投稿を作成する編集者です。ユーザーが伝えたい要素を整理し、読者の共感やアクションを促す文章を提案してください。適切なCTAや質問があれば追記してください。',
+  profile:
+    'あなたは自己紹介文作成の専門家です。ユーザーの経歴や強みを整理し、読み手に信頼感と親近感が伝わるプロフィール文を作成してください。'
+}
+
 interface Message {
   role: 'user' | 'assistant'
   content: string
@@ -146,7 +157,7 @@ export default function MultiBotSelector() {
           conversation_id: conversationId,
           user: userId,
           botType: selectedBot,
-          customPrompt: customPrompt || undefined
+          customPrompt: (customPrompt && customPrompt.trim()) || DEFAULT_CUSTOM_PROMPTS[selectedBot]
         }),
         signal: abortControllerRef.current.signal
       })
