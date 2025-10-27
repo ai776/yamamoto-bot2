@@ -291,6 +291,13 @@ export default function MultiBotSelector() {
     setCustomPrompt(prompt)
   }
 
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
+    }
+  }
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* ヘッダー：ボット選択 */}
@@ -391,14 +398,15 @@ export default function MultiBotSelector() {
           <div className="border-t bg-white p-4">
             <div className="max-w-4xl mx-auto">
               <div className="flex gap-2">
-                <input
-                  type="text"
+                <textarea
+                  rows={1}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  onKeyDown={handleInputKeyDown}
                   placeholder={currentBot.placeholder}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  style={{ minHeight: '44px' }}
                 />
                 <button
                   onClick={sendMessage}

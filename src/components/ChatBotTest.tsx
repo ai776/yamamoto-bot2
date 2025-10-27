@@ -114,7 +114,7 @@ export default function ChatBotTest() {
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       sendMessage()
@@ -217,15 +217,15 @@ export default function ChatBotTest() {
       {/* 入力エリア */}
       <div className="bg-white border-t border-gray-200 p-3">
         <div className="flex items-center space-x-2">
-          <input
-            type="text"
+          <textarea
+            rows={1}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyDown}
             placeholder="メッセージを入力..."
-            className="flex-1 px-4 py-2 bg-gray-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-line-blue"
+            className="flex-1 px-4 py-2 bg-gray-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-line-blue resize-none"
             disabled={isLoading}
-            style={{ position: 'relative', zIndex: 10 }}
+            style={{ position: 'relative', zIndex: 10, minHeight: '44px' }}
           />
           <button
             onClick={sendMessage}
