@@ -85,6 +85,23 @@ export default function MultiBotSelector() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const adjustTextareaHeight = useCallback(() => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    const baseHeight = 44
+    const viewportCap = typeof window !== 'undefined' ? window.innerHeight * 0.45 : 0
+    const maxHeight = Math.max(baseHeight, Math.min(420, viewportCap || 420))
+
+    textarea.style.height = 'auto'
+    const measuredHeight = Math.max(textarea.scrollHeight, baseHeight)
+    const clampedHeight = Math.min(measuredHeight, maxHeight)
+
+    textarea.style.height = `${clampedHeight}px`
+    textarea.style.overflowY = measuredHeight > maxHeight ? 'auto' : 'hidden'
+  }, [])
 
   // ユーザーIDの初期化（メモリ機能用）
   useEffect(() => {
@@ -121,6 +138,10 @@ export default function MultiBotSelector() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    adjustTextareaHeight()
+  }, [input, selectedBot, adjustTextareaHeight])
 
   // メッセージ送信処理
   const sendMessage = async () => {
@@ -291,6 +312,10 @@ export default function MultiBotSelector() {
     setCustomPrompt(prompt)
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value)
+  }
+
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter') {
       if (e.nativeEvent.isComposing) {
@@ -404,9 +429,10 @@ export default function MultiBotSelector() {
             <div className="max-w-4xl mx-auto">
               <div className="flex gap-2">
                 <textarea
+                  ref={textareaRef}
                   rows={1}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={handleInputChange}
                   onKeyDown={handleInputKeyDown}
                   placeholder={currentBot.placeholder}
                   disabled={isLoading}
