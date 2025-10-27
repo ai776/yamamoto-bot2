@@ -34,8 +34,14 @@ export default async function handler(
 
   try {
     // リクエストボディを作成
+    const inputs: Record<string, string> = {}
+
+    if (typeof system_prompt === 'string' && system_prompt.trim() !== '') {
+      inputs.system_prompt = system_prompt.trim()
+    }
+
     const requestBody: any = {
-      inputs: {},  // inputsは必須だが空でOK（Dify APIの仕様）
+      inputs,
       query: message,
       response_mode: 'blocking',
       user: 'default_user' // 固定のユーザー識別子

@@ -115,9 +115,14 @@ export default function ChatBotTest() {
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage()
+    if (e.key === 'Enter') {
+      if (e.nativeEvent.isComposing) {
+        return
+      }
+      if (!e.shiftKey) {
+        e.preventDefault()
+        sendMessage()
+      }
     }
   }
 
